@@ -3,63 +3,70 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PSA Submission Tracker</title>
+<title>PSA Submission Tracker | Palmetto Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
     :root {
-        --bg: #0b1220; --panel: #111a2e; --panel-2: #16223a; --border: #1f2d4d;
-        --text: #e7ecf5; --muted: #93a0bd; --accent: #4f8cff; --accent-2: #6ee7b7;
-        --done: #22c55e; --pending: #475569;
+        --bg: #f3f3f3; --panel: #ffffff; --panel-2: #f7f7f7; --border: #e3e3e3;
+        --text: #121212; --muted: #6b7280; --accent: #121212; --accent-2: #16a34a;
+        --done: #16a34a; --pending: #9ca3af;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background: linear-gradient(180deg, #0b1220 0%, #0a0f1d 100%);
+        font-family: "Assistant", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
         color: var(--text); min-height: 100vh; padding: 40px 20px;
     }
     .container { max-width: 820px; margin: 0 auto; }
     header { text-align: center; margin-bottom: 32px; }
+    .brand-logo { height: 64px; width: auto; margin-bottom: 18px; }
     header h1 {
-        margin: 0 0 8px; font-size: 28px; font-weight: 700;
-        background: linear-gradient(90deg, var(--accent), var(--accent-2));
-        -webkit-background-clip: text; background-clip: text; color: transparent;
+        margin: 0 0 8px; font-size: 28px; font-weight: 800;
+        color: var(--text); letter-spacing: -0.01em;
     }
-    header p { margin: 0; color: var(--muted); font-size: 14px; }
+    header p { margin: 0; color: var(--muted); font-size: 15px; }
     .search-card {
         background: var(--panel); border: 1px solid var(--border);
         border-radius: 14px; padding: 20px; margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(18,18,18,0.06);
     }
     .search-row { display: flex; gap: 10px; }
     input[type="text"] {
-        flex: 1; padding: 12px 14px; background: var(--panel-2);
+        flex: 1; padding: 12px 14px; background: #fff;
         border: 1px solid var(--border); border-radius: 10px;
         color: var(--text); font-size: 15px; outline: none;
+        font-family: inherit;
     }
     input[type="text"]:focus { border-color: var(--accent); }
-    input[type="text"]::placeholder { color: #5b6883; }
+    input[type="text"]::placeholder { color: #9aa0ad; }
     button {
-        padding: 12px 20px; background: var(--accent); color: white;
-        border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
-        cursor: pointer;
+        padding: 12px 22px; background: var(--accent); color: #fff;
+        border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: inherit;
     }
-    button:hover { filter: brightness(1.1); }
+    button:hover { background: #2a2a2a; }
     .share-row { display: flex; gap: 10px; margin-top: 6px; }
     input[type="email"] {
-        flex: 1; padding: 12px 14px; background: var(--panel-2);
+        flex: 1; padding: 12px 14px; background: #fff;
         border: 1px solid var(--border); border-radius: 10px;
         color: var(--text); font-size: 15px; outline: none;
+        font-family: inherit;
     }
     input[type="email"]:focus { border-color: var(--accent); }
-    input[type="email"]::placeholder { color: #5b6883; }
+    input[type="email"]::placeholder { color: #9aa0ad; }
     @media (max-width: 600px) { .share-row { flex-direction: column; } }
     .error-msg {
         margin-top: 16px; padding: 12px 14px; border-radius: 10px;
-        background: rgba(239, 68, 68, 0.12); color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.3); font-size: 14px;
+        background: rgba(220, 38, 38, 0.08); color: #b91c1c;
+        border: 1px solid rgba(220, 38, 38, 0.25); font-size: 14px;
     }
     .result-card {
         background: var(--panel); border: 1px solid var(--border);
         border-radius: 14px; padding: 24px;
+        box-shadow: 0 1px 3px rgba(18,18,18,0.06);
     }
     .muted-note { color: var(--muted); font-size: 14px; }
     .result-header {
@@ -67,16 +74,16 @@
         flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
         padding-bottom: 16px; border-bottom: 1px solid var(--border);
     }
-    .result-header .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .result-header .value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+    .result-header .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .result-header .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
     .progress-summary { text-align: right; }
-    .progress-summary .count { font-size: 22px; font-weight: 700; color: var(--accent-2); }
+    .progress-summary .count { font-size: 22px; font-weight: 800; color: var(--done); }
     .progress-bar {
-        width: 100%; height: 6px; background: var(--panel-2);
+        width: 100%; height: 8px; background: #ececec;
         border-radius: 99px; overflow: hidden; margin-bottom: 24px;
     }
     .progress-bar-fill {
-        height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        height: 100%; background: var(--done);
         border-radius: 99px;
     }
     .card-count {
@@ -85,43 +92,43 @@
         border: 1px solid var(--border); border-radius: 99px;
         font-size: 12px; color: var(--muted); margin-top: 6px;
     }
-    .card-count strong { color: var(--text); font-weight: 600; }
+    .card-count strong { color: var(--text); font-weight: 700; }
     .steps { display: flex; flex-direction: column; gap: 10px; }
     .step {
         display: flex; align-items: center; gap: 14px;
         padding: 14px 16px; background: var(--panel-2);
         border: 1px solid var(--border); border-radius: 12px;
     }
-    .step.done { border-color: rgba(34, 197, 94, 0.4); }
-    .step.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .step.done { border-color: rgba(22, 163, 74, 0.35); background: rgba(22, 163, 74, 0.05); }
+    .step.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #fff; }
     .step-num {
         flex: 0 0 32px; height: 32px; width: 32px;
         border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        background: var(--panel); border: 1px solid var(--border);
-        font-size: 13px; font-weight: 600; color: var(--muted);
+        background: #fff; border: 1px solid var(--border);
+        font-size: 13px; font-weight: 700; color: var(--muted);
     }
     .step.done .step-num { background: var(--done); color: white; border-color: var(--done); }
     .step.current .step-num { background: var(--accent); color: white; border-color: var(--accent); }
     .step-body { flex: 1; min-width: 0; }
-    .step-name { font-size: 15px; font-weight: 600; }
+    .step-name { font-size: 15px; font-weight: 700; }
     .step-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
     .step-status {
-        font-size: 12px; font-weight: 600; padding: 4px 10px;
+        font-size: 12px; font-weight: 700; padding: 4px 10px;
         border-radius: 99px; text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .step-status.done { background: rgba(34, 197, 94, 0.15); color: #86efac; }
-    .step-status.inprogress { background: rgba(79, 140, 255, 0.18); color: #93c5fd; }
-    .step-status.pending { background: rgba(71, 85, 105, 0.3); color: #94a3b8; }
+    .step-status.done { background: rgba(22, 163, 74, 0.12); color: #15803d; }
+    .step-status.inprogress { background: rgba(18, 18, 18, 0.1); color: var(--text); }
+    .step-status.pending { background: rgba(156, 163, 175, 0.18); color: #6b7280; }
     .checkmark { width: 14px; height: 14px; }
     .cards-section {
         margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
     }
     .cards-section h2 {
-        font-size: 16px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+        font-size: 16px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; font-weight: 700;
     }
     .cards-section h2 .badge {
-        font-size: 11px; padding: 3px 8px; background: rgba(34, 197, 94, 0.15);
-        color: #86efac; border-radius: 99px; font-weight: 600;
+        font-size: 11px; padding: 3px 8px; background: rgba(22, 163, 74, 0.12);
+        color: #15803d; border-radius: 99px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 0.04em;
     }
     .card-row {
@@ -131,17 +138,18 @@
         border: 1px solid var(--border); border-radius: 10px;
         margin-bottom: 8px;
     }
-    .card-info .card-title { font-size: 14px; font-weight: 600; }
+    .card-info .card-title { font-size: 14px; font-weight: 700; }
     .card-info .card-meta {
         font-size: 12px; color: var(--muted); margin-top: 2px;
         font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
     .card-grade {
-        font-size: 14px; font-weight: 700; padding: 6px 12px; border-radius: 8px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        color: #0a0f1d; min-width: 50px; text-align: center;
+        font-size: 14px; font-weight: 800; padding: 6px 12px; border-radius: 8px;
+        background: var(--accent); color: #fff;
+        min-width: 50px; text-align: center;
     }
-    .card-grade.ungraded { background: var(--panel); color: var(--muted); }
+    .card-grade.ungraded { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); }
+    footer { text-align: center; margin-top: 28px; color: var(--muted); font-size: 13px; }
     @media (max-width: 600px) {
         body { padding: 20px 12px; }
         .search-row { flex-direction: column; }
@@ -154,6 +162,7 @@
 <div class="container">
 
     <header>
+        <img class="brand-logo" src="https://palmettocards.com/cdn/shop/files/Screenshot_2023-06-26_184054.png?v=1687822886&width=400" alt="Palmetto Cards" />
         <h1>PSA Submission Tracker</h1>
         <p>Enter a PSA submission number to view its 8-step grading progress</p>
     </header>
@@ -168,6 +177,8 @@
     </div>
 
     <div id="result"></div>
+
+    <footer>Palmetto Cards &middot; Lexington, SC</footer>
 
 </div>
 <script src="app.js"></script>
