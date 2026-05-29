@@ -100,8 +100,70 @@ function renderResult(data) {
     html += '</div>'; // cards-section
   }
 
+  // Email-this-update section (opens the sender's own email app, pre-filled)
+  html += '<div class="cards-section">';
+  html += '<h2>Send this update by email</h2>';
+  html += '<div class="share-row">';
+  html += '<input type="email" id="shareEmail" placeholder="recipient@example.com" />';
+  html += '<button type="button" id="shareBtn">Compose email</button>';
+  html += '</div>';
+  html += '<div id="shareMsg" class="muted-note" style="margin-top:10px">Opens your email app with the submission # and progress filled in — just hit send.</div>';
+  html += '</div>';
+
   html += '</div>'; // result-card
   return html;
+}
+
+// Build the email subject + body from the current progress data.
+function buildEmail(data) {
+  const total = data.steps.length;
+  const stepNum = (data.currentIdx >= 0) ? (data.currentIdx + 1) : total;
+  const currentName = (data.currentIdx >= 0) ? data.steps[data.currentIdx].name : "Shipped";
+
+  const subject = data.isShipped
+    ? ("PSA submission #" + data.submissionNumber + " is ready / shipping back!")
+    : ("PSA submission #" + data.submissionNumber + " — step " + stepNum + " of " + total);
+
+  const lines = [];
+  lines.push("PSA Submission #: " + data.submissionNumber);
+  if (data.orderNumber) lines.push("PSA Order #: " + data.orderNumber);
+  lines.push("");
+  if (data.isShipped) {
+    lines.push("Good news - your cards have been graded and are shipping back!");
+  } else {
+    lines.push("Current step: " + stepNum + " of " + total + " (" + currentName + ")");
+  }
+  lines.push("");
+  lines.push("Progress:");
+  for (let i = 0; i < data.steps.length; i++) {
+    const s = data.steps[i];
+    const mark = s.done ? "[x]" : (i === data.currentIdx ? "[ ] (in progress)" : "[ ]");
+    lines.push("  " + mark + " " + s.name);
+  }
+  lines.push("");
+  lines.push("Track it live: " + window.location.origin + "/?sub=" + data.submissionNumber);
+
+  return { subject: subject, body: lines.join("\n") };
+}
+
+function wireShareButton(data) {
+  const btn = document.getElementById("shareBtn");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    const emailInput = document.getElementById("shareEmail");
+    const msg = document.getElementById("shareMsg");
+    const to = (emailInput.value || "").trim();
+    if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      msg.textContent = "Please enter a valid email address (or leave it blank).";
+      return;
+    }
+    const em = buildEmail(data);
+    const mailto = "mailto:" + to +
+      "?subject=" + encodeURIComponent(em.subject) +
+      "&body=" + encodeURIComponent(em.body);
+    window.location.href = mailto;
+    msg.textContent = "Opening your email app…";
+  });
 }
 
 (async function () {
@@ -136,4 +198,5 @@ function renderResult(data) {
   }
 
   result.innerHTML = renderResult(data);
+  wireShareButton(data);
 })();

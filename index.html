@@ -43,6 +43,15 @@
         cursor: pointer;
     }
     button:hover { filter: brightness(1.1); }
+    .share-row { display: flex; gap: 10px; margin-top: 6px; }
+    input[type="email"] {
+        flex: 1; padding: 12px 14px; background: var(--panel-2);
+        border: 1px solid var(--border); border-radius: 10px;
+        color: var(--text); font-size: 15px; outline: none;
+    }
+    input[type="email"]:focus { border-color: var(--accent); }
+    input[type="email"]::placeholder { color: #5b6883; }
+    @media (max-width: 600px) { .share-row { flex-direction: column; } }
     .error-msg {
         margin-top: 16px; padding: 12px 14px; border-radius: 10px;
         background: rgba(239, 68, 68, 0.12); color: #fca5a5;
