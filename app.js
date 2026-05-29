@@ -47,15 +47,13 @@ function renderResult(data) {
   for (let i = 0; i < data.steps.length; i++) {
     const step = data.steps[i];
     const isDone = step.done;
-    const isCurrent = (i === data.currentIdx); // latest completed step = where it is now
-    const isLast = (i === data.steps.length - 1);
+    const isCurrent = (i === data.currentIdx); // first not-completed step = in progress
 
     let statusLabel, statusClass;
-    if (isCurrent) {
-      statusLabel = (isLast && isDone) ? "Shipped" : "Current Step";
-      statusClass = "inprogress";
-    } else if (isDone) {
-      statusLabel = "Complete"; statusClass = "done";
+    if (isDone) {
+      statusLabel = "Completed"; statusClass = "done";
+    } else if (isCurrent) {
+      statusLabel = "In Progress"; statusClass = "inprogress";
     } else {
       statusLabel = "Pending"; statusClass = "pending";
     }

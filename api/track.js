@@ -75,11 +75,9 @@ module.exports = async function handler(req, res) {
   });
 
   const doneCount = steps.filter(s => s.done).length;
-  // "The step it's on" = the latest completed step (furthest milestone reached).
-  let currentIdx = -1;
-  for (let i = 0; i < steps.length; i++) {
-    if (steps[i].done) currentIdx = i;
-  }
+  // The "In Progress" step = the first step that is not yet completed.
+  // (-1 means every step is done, i.e. the order is fully shipped.)
+  const currentIdx = steps.findIndex(s => !s.done);
   const isShipped = !!d.shipped || (steps.length > 0 && steps[steps.length - 1].done === true);
 
   return res.status(200).json({
