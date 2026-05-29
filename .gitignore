@@ -11,3 +11,10 @@ node_modules/
 
 # Logs
 *.log
+
+# Secrets / local env — NEVER commit these
+.env
+.env.local
+.env*.local
+
+.vercel
