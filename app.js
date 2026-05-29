@@ -16,7 +16,10 @@ function checkmarkSvg() {
 
 function renderResult(data) {
   const TOTAL = data.steps.length;
-  const pct = Math.round((data.doneCount / TOTAL) * 100);
+  // Show the step the order is currently ON (the in-progress step), not just
+  // the number completed. If everything is done, it's on the final step.
+  const currentStepNum = (data.currentIdx >= 0) ? (data.currentIdx + 1) : TOTAL;
+  const pct = Math.round((currentStepNum / TOTAL) * 100);
   let html = "";
 
   html += '<div class="result-card">';
@@ -35,7 +38,7 @@ function renderResult(data) {
   html += '</div>';
   html += '<div class="progress-summary">';
   html += '<div class="label">Progress</div>';
-  html += '<div class="count">' + data.doneCount + ' / ' + TOTAL + '</div>';
+  html += '<div class="count">' + currentStepNum + ' / ' + TOTAL + '</div>';
   html += '</div>';
   html += '</div>'; // result-header
 
