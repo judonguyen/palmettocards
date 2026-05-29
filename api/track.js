@@ -1,32 +1,21 @@
 // Vercel Serverless Function — runs on Vercel's servers, NOT in the browser.
-// This is the secure, Vercel-native replacement for the Salesforce SSJS.
-// The PSA token is read from an environment variable (process.env.PSA_TOKEN),
-// so it is NEVER exposed to visitors or committed to the repo.
+// Calls the PSA public API and returns clean JSON for the browser UI.
+// The PSA token is read from process.env.PSA_TOKEN, so it is never exposed
+// to visitors or committed to the repo.
 
 const PSA_BASE = "https://api.psacard.com/publicapi";
 
-// The 8 PSA grading steps
-const STEPS = [
-  { key: "arrived",          name: "Arrived",           desc: "Submission has arrived at PSA" },
-  { key: "orderPrep",        name: "Order Prep",        desc: "Reviewed, verified, and logged into the system" },
-  { key: "researchId",       name: "Research & ID",     desc: "Cards researched for accurate labeling" },
-  { key: "grading",          name: "Grading",           desc: "Authentication and grading complete" },
-  { key: "assembly",         name: "Assembly",          desc: "Labels printed and cards sealed in slabs" },
-  { key: "qualityAssurance", name: "Quality Assurance", desc: "Final QA review before shipping" },
-  { key: "imaging",          name: "Imaging",           desc: "Cards scanned and imaged for records" },
-  { key: "shipped",          name: "Shipped",           desc: "Order has shipped back to the customer" }
-];
-
-// Alternate field names PSA might use for each step
-const STEP_ALIASES = {
-  arrived: ["Arrived", "arrivedAtPSA"],
-  orderPrep: ["OrderPrep", "order_prep", "prep"],
-  researchId: ["ResearchID", "research_id", "researchAndID", "Research"],
-  grading: ["Grading", "graded"],
-  assembly: ["Assembly", "assembled"],
-  qualityAssurance: ["QA", "qa", "QualityAssurance", "quality_assurance"],
-  imaging: ["Imaging", "imaged"],
-  shipped: ["Shipped", "shipped_out"]
+// Friendly display names + descriptions for each PSA progress step.
+// Keys match the "step" values returned by /order/GetProgress.
+const STEP_META = {
+  Arrived:       { name: "Arrived",             desc: "Submission has arrived at PSA" },
+  OrderPrep:     { name: "Order Prep",          desc: "Reviewed, verified, and logged into the system" },
+  ResearchAndID: { name: "Research & ID",       desc: "Cards researched for accurate labeling" },
+  Grading:       { name: "Grading",             desc: "Authentication and grading complete" },
+  Assembly:      { name: "Assembly",            desc: "Labels printed and cards sealed in slabs" },
+  QACheck1:      { name: "Quality Assurance 1", desc: "First quality-assurance review" },
+  QACheck2:      { name: "Quality Assurance 2", desc: "Final QA review before shipping" },
+  Shipped:       { name: "Shipped",             desc: "Order has shipped back to the customer" }
 };
 
 async function psaGet(path) {
@@ -51,74 +40,6 @@ async function psaGet(path) {
   }
 }
 
-function extractStepValue(data, stepKey) {
-  const candidates = [data];
-  if (data.steps) candidates.push(data.steps);
-  if (data.OrderProcess) candidates.push(data.OrderProcess);
-  if (data.orderProcess) candidates.push(data.orderProcess);
-  if (data.result) candidates.push(data.result);
-  if (data.data) candidates.push(data.data);
-
-  const keys = [stepKey].concat(STEP_ALIASES[stepKey] || []);
-  for (const obj of candidates) {
-    if (!obj) continue;
-    for (const k of keys) {
-      if (Object.prototype.hasOwnProperty.call(obj, k)) {
-        const v = obj[k];
-        if (typeof v === "boolean") return v;
-        if (typeof v === "string") {
-          const lv = v.toLowerCase();
-          return lv === "true" || lv === "completed" || lv === "complete";
-        }
-        if (typeof v === "number") return v > 0;
-        if (v && typeof v === "object" && "completed" in v) return !!v.completed;
-      }
-    }
-  }
-  return false;
-}
-
-function extractCardCount(data) {
-  const candidates = [data, data.OrderProcess, data.orderProcess, data.result, data.data, data.submission, data.order];
-  const keys = ["cardCount", "CardCount", "card_count", "itemCount", "ItemCount", "item_count",
-                "numberOfCards", "NumberOfCards", "totalCards", "totalItems", "count", "quantity"];
-  const arrKeys = ["cards", "items", "certs", "Cards", "Items", "Certs"];
-  for (const obj of candidates) {
-    if (!obj) continue;
-    for (const k of keys) {
-      if (typeof obj[k] === "number") return obj[k];
-    }
-    for (const ak of arrKeys) {
-      if (obj[ak] && obj[ak].length !== undefined) return obj[ak].length;
-    }
-  }
-  return null;
-}
-
-function extractCertNumbers(data) {
-  const candidates = [data, data.OrderProcess, data.orderProcess, data.result, data.data, data.submission, data.order];
-  const arrKeys = ["certs", "Certs", "certNumbers", "CertNumbers", "cards", "Cards", "items", "Items"];
-  for (const obj of candidates) {
-    if (!obj) continue;
-    for (const ak of arrKeys) {
-      const arr = obj[ak];
-      if (arr && arr.length) {
-        const result = [];
-        for (const it of arr) {
-          if (typeof it === "string" || typeof it === "number") {
-            result.push(String(it));
-          } else if (it) {
-            const cn = it.certNumber || it.CertNumber || it.cert || it.Cert || it.id || it.ID;
-            if (cn) result.push(String(cn));
-          }
-        }
-        return result;
-      }
-    }
-  }
-  return [];
-}
-
 module.exports = async function handler(req, res) {
   const sub = (req.query && req.query.sub) ? String(req.query.sub) : "";
 
@@ -129,49 +50,42 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Server is not configured with a PSA token." });
   }
 
-  const orderRes = await psaGet("/orderprocess/GetOrderProcess/" + encodeURIComponent(sub));
+  const orderRes = await psaGet("/order/GetProgress/" + encodeURIComponent(sub));
   if (!orderRes.ok) {
-    const msg = orderRes.status ? ("PSA API returned " + orderRes.status) : (orderRes.error || "Unknown error");
+    let msg;
+    if (orderRes.status === 404) {
+      msg = "Submission #" + sub + " was not found. Double-check the number.";
+    } else if (orderRes.status) {
+      msg = "PSA API returned " + orderRes.status;
+    } else {
+      msg = orderRes.error || "Unknown error";
+    }
     return res.status(200).json({ ok: false, error: msg });
   }
 
-  const orderData = orderRes.data || {};
-  const cardCount = extractCardCount(orderData);
-  const stepValues = STEPS.map(s => extractStepValue(orderData, s.key));
-  const doneCount = stepValues.filter(Boolean).length;
-  let currentIdx = stepValues.findIndex(v => !v); // -1 if all done
-  const isShipped = stepValues[stepValues.length - 1] === true;
-  const steps = STEPS.map((s, i) => ({ name: s.name, desc: s.desc, done: stepValues[i] }));
+  const d = orderRes.data || {};
+  const rawSteps = Array.isArray(d.orderProgressSteps) ? d.orderProgressSteps.slice() : [];
+  rawSteps.sort((a, b) => (a.index || 0) - (b.index || 0));
 
-  const certs = [];
-  if (isShipped) {
-    const certNums = extractCertNumbers(orderData);
-    for (const cnum of certNums) {
-      const certRes = await psaGet("/cert/GetByCertNumber/" + encodeURIComponent(cnum));
-      if (certRes.ok && certRes.data) {
-        const c = certRes.data.PSACert || certRes.data.psaCert || certRes.data.cert || certRes.data;
-        certs.push({
-          certNumber: c.CertNumber || c.certNumber || cnum,
-          grade: c.CardGrade || c.cardGrade || c.GradeDescription || c.gradeDescription || "—",
-          subject: c.Subject || c.subject || "—",
-          year: c.Year || c.year || "",
-          brand: c.Brand || c.brand || "",
-          cardNumber: c.CardNumber || c.cardNumber || ""
-        });
-      } else {
-        certs.push({ certNumber: cnum, grade: "Error", subject: "Lookup failed", year: "", brand: "", cardNumber: "" });
-      }
-    }
-  }
+  const steps = rawSteps.map(s => {
+    const meta = STEP_META[s.step] || { name: s.step, desc: "" };
+    return { name: meta.name, desc: meta.desc, done: !!s.completed };
+  });
+
+  const doneCount = steps.filter(s => s.done).length;
+  const currentIdx = steps.findIndex(s => !s.done); // -1 if all done
+  const isShipped = !!d.shipped || (steps.length > 0 && steps[steps.length - 1].done === true);
 
   return res.status(200).json({
     ok: true,
     submissionNumber: sub,
-    cardCount: cardCount,
+    cardCount: null,        // PSA's progress endpoint does not return a card count
     doneCount: doneCount,
     currentIdx: currentIdx,
     isShipped: isShipped,
+    gradesReady: !!d.gradesReady,
+    problemOrder: !!d.problemOrder,
     steps: steps,
-    certs: certs
+    certs: []               // no cert list is available from the progress endpoint
   });
 };
