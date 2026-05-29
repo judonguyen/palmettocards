@@ -118,10 +118,10 @@ function renderResult(data) {
 function buildEmail(data) {
   const total = data.steps.length;
   const stepNum = (data.currentIdx >= 0) ? (data.currentIdx + 1) : total;
-  const currentName = (data.currentIdx >= 0) ? data.steps[data.currentIdx].name : "Shipped";
+  const currentName = (data.currentIdx >= 0) ? data.steps[data.currentIdx].name : "Complete";
 
   const subject = data.isShipped
-    ? ("PSA submission #" + data.submissionNumber + " is ready / shipping back!")
+    ? ("PSA submission #" + data.submissionNumber + " is ready!")
     : ("PSA submission #" + data.submissionNumber + " — step " + stepNum + " of " + total);
 
   const lines = [];
@@ -129,7 +129,9 @@ function buildEmail(data) {
   if (data.orderNumber) lines.push("PSA Order #: " + data.orderNumber);
   lines.push("");
   if (data.isShipped) {
-    lines.push("Good news - your cards have been graded and are shipping back!");
+    lines.push("Good news - your cards have been graded and are ready!");
+  } else if (data.currentIdx < 0) {
+    lines.push("All " + total + " steps are complete!");
   } else {
     lines.push("Current step: " + stepNum + " of " + total + " (" + currentName + ")");
   }
