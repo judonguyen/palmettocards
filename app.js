@@ -26,6 +26,9 @@ function renderResult(data) {
   html += '<div>';
   html += '<div class="label">Submission #</div>';
   html += '<div class="value">' + esc(data.submissionNumber) + '</div>';
+  if (data.orderNumber) {
+    html += '<div class="card-count">PSA Order #<strong>' + esc(data.orderNumber) + '</strong></div>';
+  }
   if (data.cardCount !== null && data.cardCount > 0) {
     html += '<div class="card-count"><strong>' + esc(data.cardCount) + '</strong> cards in submission</div>';
   }
@@ -44,13 +47,18 @@ function renderResult(data) {
   for (let i = 0; i < data.steps.length; i++) {
     const step = data.steps[i];
     const isDone = step.done;
-    const isCurrent = (i === data.currentIdx);
-    const isInProgress = isCurrent && i > 0 && data.steps[i - 1].done === true;
+    const isCurrent = (i === data.currentIdx); // latest completed step = where it is now
+    const isLast = (i === data.steps.length - 1);
 
     let statusLabel, statusClass;
-    if (isDone) { statusLabel = "Complete"; statusClass = "done"; }
-    else if (isInProgress) { statusLabel = "In Progress"; statusClass = "inprogress"; }
-    else { statusLabel = "Not Completed"; statusClass = "pending"; }
+    if (isCurrent) {
+      statusLabel = (isLast && isDone) ? "Shipped" : "Current Step";
+      statusClass = "inprogress";
+    } else if (isDone) {
+      statusLabel = "Complete"; statusClass = "done";
+    } else {
+      statusLabel = "Pending"; statusClass = "pending";
+    }
 
     const rowClass = "step" + (isDone ? " done" : "") + (isCurrent ? " current" : "");
     const stepNumContent = isDone ? checkmarkSvg() : String(i + 1);

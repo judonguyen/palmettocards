@@ -50,7 +50,9 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "Server is not configured with a PSA token." });
   }
 
-  const orderRes = await psaGet("/order/GetProgress/" + encodeURIComponent(sub));
+  // NOTE: PSA has two endpoints — GetProgress expects an ORDER number, while
+  // GetSubmissionProgress expects a SUBMISSION number (what users type here).
+  const orderRes = await psaGet("/order/GetSubmissionProgress/" + encodeURIComponent(sub));
   if (!orderRes.ok) {
     let msg;
     if (orderRes.status === 404) {
@@ -73,12 +75,17 @@ module.exports = async function handler(req, res) {
   });
 
   const doneCount = steps.filter(s => s.done).length;
-  const currentIdx = steps.findIndex(s => !s.done); // -1 if all done
+  // "The step it's on" = the latest completed step (furthest milestone reached).
+  let currentIdx = -1;
+  for (let i = 0; i < steps.length; i++) {
+    if (steps[i].done) currentIdx = i;
+  }
   const isShipped = !!d.shipped || (steps.length > 0 && steps[steps.length - 1].done === true);
 
   return res.status(200).json({
     ok: true,
     submissionNumber: sub,
+    orderNumber: d.orderNumber || "",
     cardCount: null,        // PSA's progress endpoint does not return a card count
     doneCount: doneCount,
     currentIdx: currentIdx,
