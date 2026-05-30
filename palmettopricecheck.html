@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Palmetto Price Check | Palmetto Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+    :root {
+        --bg: #ffffff; --panel: #ffffff; --panel-2: #f6f6f6; --border: #e3e3e3;
+        --text: #121212; --muted: #6b7280; --accent: #121212; --accent-2: #16a34a;
+        --done: #16a34a; --pending: #9ca3af;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+        font-family: "Assistant", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg); color: var(--text); min-height: 100vh; padding: 40px 20px;
+    }
+    .container { max-width: 820px; margin: 0 auto; }
+    .topnav { max-width: 820px; margin: 0 auto 18px; }
+    .topnav a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; }
+    .topnav a:hover { color: var(--accent); }
+    header { text-align: center; margin-bottom: 32px; }
+    .brand-logo { height: 64px; width: auto; margin-bottom: 14px; }
+    header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+    header p { margin: 0; color: var(--muted); font-size: 15px; }
+    .search-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 14px; padding: 20px; margin-bottom: 24px;
+        box-shadow: 0 1px 4px rgba(18,18,18,0.10);
+    }
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    input[type="text"] {
+        flex: 1; min-width: 200px; padding: 12px 14px; background: #fff;
+        border: 1px solid var(--border); border-radius: 10px;
+        color: var(--text); font-size: 15px; outline: none; font-family: inherit;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+    input[type="text"]::placeholder { color: #9aa0ad; }
+    select {
+        padding: 12px 14px; background: #fff; border: 1px solid var(--border);
+        border-radius: 10px; color: var(--text); font-size: 15px; font-family: inherit; cursor: pointer;
+    }
+    button {
+        padding: 12px 22px; background: var(--accent); color: #fff;
+        border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: inherit;
+    }
+    button:hover { background: #2a2a2a; }
+    .result-card {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 14px; padding: 24px; box-shadow: 0 1px 4px rgba(18,18,18,0.10);
+    }
+    .muted-note { color: var(--muted); font-size: 14px; }
+    .notice {
+        padding: 14px 16px; border-radius: 10px; font-size: 14px;
+        background: rgba(18,18,18,0.05); border: 1px solid var(--border); color: var(--muted);
+    }
+    .preview-badge {
+        display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; padding: 3px 8px; border-radius: 99px;
+        background: rgba(245, 158, 11, 0.15); color: #b45309; margin-bottom: 14px;
+    }
+    .price-row {
+        display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+        padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--border);
+        border-radius: 12px; margin-bottom: 10px;
+    }
+    .price-info .price-title { font-size: 15px; font-weight: 700; }
+    .price-info .price-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .price-value { font-size: 18px; font-weight: 800; color: var(--done); white-space: nowrap; }
+    .price-value .src { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-align: right; }
+    footer { text-align: center; margin-top: 28px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 600px) { body { padding: 20px 12px; } .search-row { flex-direction: column; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <img class="brand-logo" src="https://palmettocards.com/cdn/shop/files/Screenshot_2023-06-26_184054.png?v=1687822886&width=400" alt="Palmetto Cards" />
+        <h1>Palmetto Price Check</h1>
+        <p>Check current market prices for sealed Pokémon &amp; sports card products</p>
+    </header>
+
+    <div class="search-card">
+        <form id="priceForm">
+            <div class="search-row">
+                <input type="text" id="queryInput" placeholder="e.g. Pokemon 151 Booster Box, 2024 Topps Series 1 Hobby Box" autocomplete="off" />
+                <select id="categorySelect">
+                    <option value="all">All</option>
+                    <option value="pokemon">Pokémon</option>
+                    <option value="sports">Sports</option>
+                </select>
+                <button type="submit">Check price</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="results"></div>
+
+    <footer>Palmetto Cards &middot; Lexington, SC</footer>
+
+</div>
+<script src="pricecheck.js"></script>
+</body>
+</html>
