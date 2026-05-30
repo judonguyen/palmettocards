@@ -58,6 +58,15 @@
     .tab:hover { background: var(--panel-2); border-color: var(--accent); color: var(--text); }
     .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
     .tab.active:hover { background: var(--accent); color: #fff; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
+    .chip {
+        padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+        background: #fff; color: var(--muted); font-weight: 600; font-size: 14px;
+        cursor: pointer; font-family: inherit;
+    }
+    .chip:hover { background: var(--panel-2); border-color: var(--accent); color: var(--text); }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .chip.active:hover { background: var(--accent); color: #fff; }
     .table-wrap {
         background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
         box-shadow: 0 1px 4px rgba(18,18,18,0.08); overflow-x: auto;
@@ -119,11 +128,10 @@
         <div class="stat"><strong>Live</strong> data: coming soon</div>
     </div>
 
+    <div class="chips" id="categoryChips"></div>
+
     <div class="controls">
         <input type="text" id="searchInput" placeholder="Search a sealed box… e.g. 151, Prizm, Topps Series 1" autocomplete="off" />
-        <select id="categoryFilter">
-            <option value="all">All categories</option>
-        </select>
         <select id="sortSelect">
             <option value="name">Sort: Name (A–Z)</option>
             <option value="priceDesc">Sort: Price (high → low)</option>

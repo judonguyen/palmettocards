@@ -31,6 +31,7 @@ const SAMPLE_PRODUCTS = [
 ];
 
 let currentGroup = "Sports";
+let currentCategory = "all";
 
 function esc(s) {
   if (s === null || s === undefined) return "";
@@ -63,17 +64,27 @@ function groupProducts() {
   return SAMPLE_PRODUCTS.filter(function (p) { return p.group === currentGroup; });
 }
 
-function populateCategoryDropdown() {
+function buildCategoryChips() {
   const cats = [];
   groupProducts().forEach(function (p) { if (cats.indexOf(p.category) === -1) cats.push(p.category); });
   cats.sort();
-  const sel = document.getElementById("categoryFilter");
-  sel.innerHTML = '<option value="all">All ' + esc(currentGroup) + " categories</option>";
-  cats.forEach(function (c) {
-    const o = document.createElement("option");
-    o.value = c; o.textContent = c;
-    sel.appendChild(o);
+
+  const wrap = document.getElementById("categoryChips");
+  wrap.innerHTML = "";
+  ["all"].concat(cats).forEach(function (c) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (c === currentCategory ? " active" : "");
+    btn.textContent = (c === "all") ? "All" : c;
+    btn.addEventListener("click", function () {
+      currentCategory = c;
+      wrap.querySelectorAll(".chip").forEach(function (x) { x.classList.remove("active"); });
+      btn.classList.add("active");
+      applyFilters();
+    });
+    wrap.appendChild(btn);
   });
+
   // Update stats for this group
   document.getElementById("statCount").textContent = groupProducts().length;
   document.getElementById("statCats").textContent = cats.length;
@@ -81,11 +92,10 @@ function populateCategoryDropdown() {
 
 function applyFilters() {
   const q = (document.getElementById("searchInput").value || "").trim().toLowerCase();
-  const cat = document.getElementById("categoryFilter").value;
   const sort = document.getElementById("sortSelect").value;
 
   let list = groupProducts().filter(function (p) {
-    const matchesCat = (cat === "all") || (p.category === cat);
+    const matchesCat = (currentCategory === "all") || (p.category === currentCategory);
     const hay = (p.year + " " + p.name + " " + p.brand + " " + p.category + " " + p.boxType).toLowerCase();
     const matchesQ = !q || hay.indexOf(q) !== -1;
     return matchesCat && matchesQ;
@@ -115,19 +125,19 @@ function applyFilters() {
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
       currentGroup = tab.getAttribute("data-group");
+      currentCategory = "all";
       tabs.forEach(function (t) { t.classList.remove("active"); });
       tab.classList.add("active");
       document.getElementById("searchInput").value = "";
-      populateCategoryDropdown();
+      buildCategoryChips();
       applyFilters();
     });
   });
 
   // Filter/sort controls
   document.getElementById("searchInput").addEventListener("input", applyFilters);
-  document.getElementById("categoryFilter").addEventListener("change", applyFilters);
   document.getElementById("sortSelect").addEventListener("change", applyFilters);
 
-  populateCategoryDropdown();
+  buildCategoryChips();
   applyFilters();
 })();
