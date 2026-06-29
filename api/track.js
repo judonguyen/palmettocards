@@ -3,7 +3,19 @@
 // The PSA token is read from process.env.PSA_TOKEN, so it is never exposed
 // to visitors or committed to the repo.
 
+const { cmd, configured } = require("../lib/store.js");
+
 const PSA_BASE = "https://api.psacard.com/publicapi";
+
+// Log a submission lookup: bump its per-submission counter and record when it
+// was last seen. Best-effort — never blocks or breaks the lookup.
+async function logSubmission(sub) {
+  if (!configured()) return;
+  try {
+    await cmd(["HINCRBY", "palmetto:subcounts", sub, 1]);
+    await cmd(["HSET", "palmetto:sublast", sub, new Date().toISOString()]);
+  } catch (e) { /* logging is non-critical */ }
+}
 
 // Friendly display names + descriptions for each PSA progress step.
 // Keys match the "step" values returned by /order/GetProgress.
@@ -46,6 +58,9 @@ module.exports = async function handler(req, res) {
   if (!/^[0-9]+$/.test(sub)) {
     return res.status(400).json({ ok: false, error: "Please enter a valid numeric submission number." });
   }
+  // Record that this submission was sent (counts every lookup, even if PSA is
+  // rate-limited) so we can see which submissions are being hit and how often.
+  await logSubmission(sub);
   if (!process.env.PSA_TOKEN) {
     return res.status(500).json({ ok: false, error: "Server is not configured with a PSA token." });
   }
