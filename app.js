@@ -24,6 +24,14 @@ function renderResult(data) {
 
   html += '<div class="result-card">';
 
+  // Note when we're showing today's saved status (a repeat check this window).
+  if (data.cached) {
+    html += '<div class="muted-note" style="background:#f4f8fb;border:1px solid #dbe6ef;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:13px">' +
+      '📅 Showing today&#39;s saved status' +
+      (data.fetchedAt ? ' (checked ' + new Date(data.fetchedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) + ')' : '') +
+      ' — it refreshes after 12:00&nbsp;PM&nbsp;CST.</div>';
+  }
+
   // Header
   html += '<div class="result-header">';
   html += '<div>';

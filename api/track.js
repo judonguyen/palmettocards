@@ -81,18 +81,19 @@ module.exports = async function handler(req, res) {
   // or PSA is rate-limited) so we can see which submissions are being hit.
   await logSubmission(sub);
 
-  // One lookup per submission per day (resets at 12:00 PM Central). Blocks
-  // repeats of a submission that was already successfully looked up this window.
-  const doneKey = "palmetto:done:" + centralPeriod();
+  // One PSA call per submission per day (window resets at 12:00 PM Central).
+  // If we already fetched it this window, serve that saved result — no new PSA
+  // call. The cache key includes the period, so it naturally refreshes at noon.
+  const cacheKey = "palmetto:cache:" + centralPeriod() + ":" + sub;
   if (configured()) {
-    let already = 0;
-    try { already = await cmd(["SISMEMBER", doneKey, sub]); } catch (e) {}
-    if (already) {
-      return res.status(200).json({
-        ok: false, rateLimited: true,
-        error: "Submission #" + sub + " has already been checked today. Each submission can be looked up once per day — please try again after 12:00 PM CST."
-      });
-    }
+    try {
+      const cached = await cmd(["GET", cacheKey]);
+      if (cached) {
+        const obj = JSON.parse(cached);
+        obj.cached = true;   // flag so the page can note it's today's saved status
+        return res.status(200).json(obj);
+      }
+    } catch (e) {}
   }
 
   if (!process.env.PSA_TOKEN) {
@@ -133,13 +134,7 @@ module.exports = async function handler(req, res) {
   // (-1 means all visible steps are done.)
   const currentIdx = steps.findIndex(s => !s.done);
 
-  // Lock this submission for the rest of today's window (only after a real
-  // result — a 429/404 above doesn't burn the daily slot).
-  if (configured()) {
-    try { await cmd(["SADD", doneKey, sub]); await cmd(["EXPIRE", doneKey, 26 * 3600]); } catch (e) {}
-  }
-
-  return res.status(200).json({
+  const result = {
     ok: true,
     submissionNumber: sub,
     orderNumber: d.orderNumber || "",
@@ -150,6 +145,15 @@ module.exports = async function handler(req, res) {
     gradesReady: !!d.gradesReady,
     problemOrder: !!d.problemOrder,
     steps: steps,
-    certs: []               // no cert list is available from the progress endpoint
-  });
+    certs: [],              // no cert list is available from the progress endpoint
+    fetchedAt: new Date().toISOString()
+  };
+
+  // Save this result for the rest of today's window so repeat checks serve it
+  // without another PSA call (only cached after a real success, never a 429/404).
+  if (configured()) {
+    try { await cmd(["SET", cacheKey, JSON.stringify(result), "EX", 26 * 3600]); } catch (e) {}
+  }
+
+  return res.status(200).json(result);
 };
