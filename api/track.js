@@ -52,15 +52,49 @@ async function psaGet(path) {
   }
 }
 
+// US daylight-saving rule (Central follows it): 2nd Sun Mar → 1st Sun Nov.
+function secondSundayMarch(y) { const f = new Date(Date.UTC(y, 2, 1)).getUTCDay(); return ((7 - f) % 7) + 1 + 7; }
+function firstSundayNov(y) { const f = new Date(Date.UTC(y, 10, 1)).getUTCDay(); return ((7 - f) % 7) + 1; }
+function usDST(y, m0, d) { if (m0 > 2 && m0 < 10) return true; if (m0 < 2 || m0 > 10) return false; if (m0 === 2) return d >= secondSundayMarch(y); return d < firstSundayNov(y); }
+
+// The current "lookup day" = a noon-Central-to-noon-Central window, labeled by
+// the date it started. Resets every day at 12:00 PM Central (CST/CDT aware).
+function centralPeriod() {
+  const now = new Date();
+  const off = usDST(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) ? 5 : 6; // CDT=-5, CST=-6
+  const c = new Date(now.getTime() - off * 3600 * 1000);  // Central wall clock in UTC fields
+  let y = c.getUTCFullYear(), m = c.getUTCMonth(), d = c.getUTCDate();
+  if (c.getUTCHours() < 12) {                              // before noon → previous window
+    const p = new Date(Date.UTC(y, m, d) - 86400000);
+    y = p.getUTCFullYear(); m = p.getUTCMonth(); d = p.getUTCDate();
+  }
+  return y + "-" + ("0" + (m + 1)).slice(-2) + "-" + ("0" + d).slice(-2);
+}
+
 module.exports = async function handler(req, res) {
   const sub = (req.query && req.query.sub) ? String(req.query.sub) : "";
 
   if (!/^[0-9]+$/.test(sub)) {
     return res.status(400).json({ ok: false, error: "Please enter a valid numeric submission number." });
   }
-  // Record that this submission was sent (counts every lookup, even if PSA is
-  // rate-limited) so we can see which submissions are being hit and how often.
+  // Record that this submission was sent (counts every lookup, even if blocked
+  // or PSA is rate-limited) so we can see which submissions are being hit.
   await logSubmission(sub);
+
+  // One lookup per submission per day (resets at 12:00 PM Central). Blocks
+  // repeats of a submission that was already successfully looked up this window.
+  const doneKey = "palmetto:done:" + centralPeriod();
+  if (configured()) {
+    let already = 0;
+    try { already = await cmd(["SISMEMBER", doneKey, sub]); } catch (e) {}
+    if (already) {
+      return res.status(200).json({
+        ok: false, rateLimited: true,
+        error: "Submission #" + sub + " has already been checked today. Each submission can be looked up once per day — please try again after 12:00 PM CST."
+      });
+    }
+  }
+
   if (!process.env.PSA_TOKEN) {
     return res.status(500).json({ ok: false, error: "Server is not configured with a PSA token." });
   }
@@ -98,6 +132,12 @@ module.exports = async function handler(req, res) {
   // The "In Progress" step = the first step that is not yet completed.
   // (-1 means all visible steps are done.)
   const currentIdx = steps.findIndex(s => !s.done);
+
+  // Lock this submission for the rest of today's window (only after a real
+  // result — a 429/404 above doesn't burn the daily slot).
+  if (configured()) {
+    try { await cmd(["SADD", doneKey, sub]); await cmd(["EXPIRE", doneKey, 26 * 3600]); } catch (e) {}
+  }
 
   return res.status(200).json({
     ok: true,
