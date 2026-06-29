@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Submission Lookup Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&family=Righteous&display=swap" rel="stylesheet" />
+<style>
+    :root { --bg:#ffffff; --panel:#ffffff; --panel-2:#f4f8fb; --border:#dbe6ef; --text:#0f1b24; --muted:#5b7180; --accent:#1f8fd0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: "Josefin Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 40px 20px; }
+    .container { max-width: 760px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { margin: 0 0 6px; font-size: 26px; font-weight: 400; font-family: "Righteous", sans-serif; }
+    header p { margin: 0; color: var(--muted); font-size: 14px; }
+    .bar { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+    .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; text-align: center; }
+    .stat .big { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    button { padding: 9px 16px; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    button:hover { background: #1877b0; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 8px 18px; box-shadow: 0 1px 4px rgba(15,27,36,0.08); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; padding: 12px 8px; border-bottom: 2px solid var(--border); }
+    td { padding: 11px 8px; border-bottom: 1px solid var(--border); font-size: 15px; }
+    tr:last-child td { border-bottom: none; }
+    .num { text-align: right; font-weight: 700; }
+    .sub { font-family: ui-monospace, Consolas, monospace; }
+    .count-pill { display: inline-block; min-width: 34px; text-align: center; padding: 3px 10px; border-radius: 99px; background: rgba(31,143,208,0.12); color: var(--accent); font-weight: 700; }
+    .when { color: var(--muted); font-size: 13px; }
+    .state { text-align: center; color: var(--muted); padding: 40px 0; }
+    footer { text-align: center; margin-top: 22px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>📊 Submission Lookup Counter</h1>
+        <p>How many times each PSA submission has been looked up</p>
+    </header>
+
+    <div class="bar">
+        <div class="stat"><div class="big" id="total">—</div><div class="lbl">Total lookups</div></div>
+        <div class="stat"><div class="big" id="unique">—</div><div class="lbl">Unique submissions</div></div>
+        <button id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div class="card" id="card"><div class="state">Loading…</div></div>
+
+    <footer>Auto-refreshes every 30 seconds.</footer>
+</div>
+<script src="/showcounter.js"></script>
+</body>
+</html>
