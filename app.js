@@ -176,6 +176,9 @@ function wireShareButton(data) {
   });
 }
 
+// Temporarily paused: set to false to turn lookups back on.
+const LOOKUPS_PAUSED = true;
+
 (async function () {
   const params = new URLSearchParams(window.location.search);
   const sub = params.get("sub");
@@ -183,6 +186,11 @@ function wireShareButton(data) {
   const result = document.getElementById("result");
 
   if (sub && input) input.value = sub;
+
+  if (LOOKUPS_PAUSED) {
+    if (result) result.innerHTML = '<div class="muted-note" style="text-align:center;padding:20px">🔒 Submission lookups are temporarily paused. Please check back later.</div>';
+    return;
+  }
 
   if (!sub) return; // nothing to look up yet
 

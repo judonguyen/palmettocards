@@ -168,11 +168,12 @@
     </header>
 
     <div class="search-card">
-        <form method="GET" action="">
+        <form method="GET" action="" onsubmit="return false">
             <div class="search-row">
-                <input type="text" id="subInput" name="sub" placeholder="e.g. 12345678" autocomplete="off" />
-                <button type="submit">Look up</button>
+                <input type="text" id="subInput" name="sub" placeholder="Lookups paused" autocomplete="off" disabled />
+                <button type="submit" disabled>Look up</button>
             </div>
+            <div class="muted-note" style="margin-top:12px">🔒 Submission lookups are temporarily paused. Please check back later.</div>
         </form>
     </div>
 
