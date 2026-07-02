@@ -80,6 +80,13 @@ function lookupsOpen() {
   } catch (e) { return true; }  // if the timezone lookup fails, don't lock out
 }
 
+// Today's date in Eastern (YYYY-MM-DD). Used as the once-per-day key; resets at
+// midnight ET (safely outside the 12–7 PM lookup window).
+function etDate() {
+  try { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
+  catch (e) { return new Date().toISOString().slice(0, 10); }
+}
+
 module.exports = async function handler(req, res) {
   const sub = (req.query && req.query.sub) ? String(req.query.sub) : "";
 
@@ -93,16 +100,18 @@ module.exports = async function handler(req, res) {
   // or PSA is rate-limited) so we can see which submissions are being hit.
   await logSubmission(sub);
 
-  // One PSA call per submission per day (window resets at 12:00 PM Central).
-  // If we already fetched it this window, serve that saved result — no new PSA
-  // call. The cache key includes the period, so it naturally refreshes at noon.
-  const cacheKey = "palmetto:cache:" + centralPeriod() + ":" + sub;
+  // Once every 5 days per submission. If it was checked in the last 5 days,
+  // return the SAVED status (their latest update) with an "already checked" flag
+  // and how many days remain — no new PSA call.
+  const cacheKey = "palmetto:cache:" + sub;
   if (configured()) {
     try {
-      const cached = await cmd(["GET", cacheKey]);
-      if (cached) {
-        const obj = JSON.parse(cached);
-        obj.cached = true;   // flag so the page can note it's today's saved status
+      const saved = await cmd(["GET", cacheKey]);
+      if (saved) {
+        const obj = JSON.parse(saved);
+        const elapsedDays = obj.fetchedAt ? (Date.now() - Date.parse(obj.fetchedAt)) / 86400000 : 0;
+        obj.alreadyChecked = true;
+        obj.daysRemaining = Math.max(1, Math.ceil(5 - elapsedDays));
         return res.status(200).json(obj);
       }
     } catch (e) {}
@@ -161,10 +170,10 @@ module.exports = async function handler(req, res) {
     fetchedAt: new Date().toISOString()
   };
 
-  // Save this result for the rest of today's window so repeat checks serve it
-  // without another PSA call (only cached after a real success, never a 429/404).
+  // Save the result for 5 days — repeats within that window get this saved
+  // status instead of a new PSA call (stored only after a real success).
   if (configured()) {
-    try { await cmd(["SET", cacheKey, JSON.stringify(result), "EX", 26 * 3600]); } catch (e) {}
+    try { await cmd(["SET", cacheKey, JSON.stringify(result), "EX", 5 * 24 * 3600]); } catch (e) {}
   }
 
   return res.status(200).json(result);

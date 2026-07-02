@@ -24,12 +24,23 @@ function renderResult(data) {
 
   html += '<div class="result-card">';
 
-  // Note when we're showing today's saved status (a repeat check this window).
-  if (data.cached) {
+  // Repeat check: show that it was already checked, plus the wait + patience note.
+  if (data.alreadyChecked) {
+    let whenTxt = "recently";
+    if (data.fetchedAt) {
+      const w = new Date(data.fetchedAt), now = new Date();
+      whenTxt = (w.toDateString() === now.toDateString())
+        ? ("today at " + w.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))
+        : ("on " + w.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " at " + w.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+    }
+    const days = data.daysRemaining || 5;
+    html += '<div class="error-msg" style="margin-bottom:16px;line-height:1.5">' +
+      '⛔ You already checked this submission <strong>' + whenTxt + '</strong> — here&#39;s the latest update below.<br />' +
+      'You can&#39;t check this number again for another <strong>' + days + ' day' + (days === 1 ? '' : 's') + '</strong>.<br />' +
+      '🧘 Patience is the key to happiness.</div>';
+  } else if (data.fetchedAt) {
     html += '<div class="muted-note" style="background:#f4f8fb;border:1px solid #dbe6ef;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:13px">' +
-      '📅 Showing today&#39;s saved status' +
-      (data.fetchedAt ? ' (checked ' + new Date(data.fetchedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) + ')' : '') +
-      ' — it refreshes after 12:00&nbsp;PM&nbsp;CST.</div>';
+      '✅ Status checked just now. You can check this submission again in <strong>5 days</strong> — 🧘 patience is the key to happiness.</div>';
   }
 
   // Header
