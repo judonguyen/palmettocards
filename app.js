@@ -240,7 +240,13 @@ function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
   }
 
   if (!data || !data.ok) {
-    result.innerHTML = '<div class="error-msg">Lookup failed: ' + esc((data && data.error) || "Unknown error") + '</div>';
+    const m = (data && data.error) || "Unknown error";
+    // "Already checked in the last 5 days" is an expected notice, not a failure.
+    if (data && data.alreadyChecked) {
+      result.innerHTML = '<div class="error-msg" style="line-height:1.55">⛔ ' + esc(m) + '</div>';
+    } else {
+      result.innerHTML = '<div class="error-msg">Lookup failed: ' + esc(m) + '</div>';
+    }
     return;
   }
 

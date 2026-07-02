@@ -94,36 +94,40 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ ok: false, error: "Please enter a valid numeric submission number." });
   }
 
-  // Admin test bypass (charlieAdmin.html): no hours window, no counting, no
-  // 5-day lock/cache — a plain pass-through to PSA for testing.
+  // Admin test page (charlieAdmin.html) bypasses ONLY the 12–7 PM ET window.
+  // The once-every-5-days rule still applies (works on both pages).
   const isAdmin = (req.query && req.query.admin === "charlie");
 
   if (!isAdmin && !lookupsOpen()) {
     return res.status(200).json({ ok: false, error: "Submission lookups are only available from 12:00 PM to 7:00 PM ET. Please check back during those hours." });
   }
-  // Record that this submission was sent (counts every lookup, even if blocked
-  // or PSA is rate-limited) so we can see which submissions are being hit.
   if (!isAdmin) await logSubmission(sub);
 
-  // Once every 5 days per submission. If it was checked in the last 5 days,
-  // return the SAVED status (their latest update) with an "already checked" flag
-  // and how many days remain — no new PSA call. (Admin bypasses this.)
-  const cacheKey = "palmetto:cache:" + sub;
-  if (!isAdmin && configured()) {
-    try {
-      const saved = await cmd(["GET", cacheKey]);
-      if (saved) {
-        const obj = JSON.parse(saved);
-        const elapsedDays = obj.fetchedAt ? (Date.now() - Date.parse(obj.fetchedAt)) / 86400000 : 0;
-        obj.alreadyChecked = true;
-        obj.daysRemaining = Math.max(1, Math.ceil(5 - elapsedDays));
-        return res.status(200).json(obj);
-      }
-    } catch (e) {}
+  // Check the database: has this submission been looked up in the last 5 days?
+  // The key carries a 5-day TTL, so its presence means "checked within 5 days" —
+  // if so, block it (no PSA call) and tell them how long to wait.
+  const checkedKey = "palmetto:checked:" + sub;
+  if (configured()) {
+    let prior = null;
+    try { prior = await cmd(["GET", checkedKey]); } catch (e) {}
+    if (prior) {
+      const elapsed = (Date.now() - Date.parse(prior)) / 86400000;
+      const daysRemaining = Math.max(1, Math.ceil(5 - (isNaN(elapsed) ? 0 : elapsed)));
+      return res.status(200).json({
+        ok: false, alreadyChecked: true, daysRemaining: daysRemaining,
+        error: "Submission #" + sub + " has already been checked within the last 5 days. 🧘 Patience is the key to happiness — please try again in about " + daysRemaining + " day" + (daysRemaining === 1 ? "" : "s") + "."
+      });
+    }
   }
 
   if (!process.env.PSA_TOKEN) {
     return res.status(500).json({ ok: false, error: "Server is not configured with a PSA token." });
+  }
+
+  // Record this lookup now (5-day TTL) BEFORE calling PSA, so the same number
+  // can't hit the PSA API again within 5 days — regardless of the outcome.
+  if (configured()) {
+    try { await cmd(["SET", checkedKey, new Date().toISOString(), "EX", 5 * 24 * 3600]); } catch (e) {}
   }
 
   // NOTE: PSA has two endpoints — GetProgress expects an ORDER number, while
@@ -174,13 +178,6 @@ module.exports = async function handler(req, res) {
     certs: [],              // no cert list is available from the progress endpoint
     fetchedAt: new Date().toISOString()
   };
-
-  // Save the result for 5 days — repeats within that window get this saved
-  // status instead of a new PSA call (stored only after a real success).
-  // Admin test lookups do NOT write the cache, so they never lock the real page.
-  if (!isAdmin && configured()) {
-    try { await cmd(["SET", cacheKey, JSON.stringify(result), "EX", 5 * 24 * 3600]); } catch (e) {}
-  }
 
   return res.status(200).json(result);
 };
