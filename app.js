@@ -205,16 +205,21 @@ function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
 
   if (sub && input) input.value = sub;
 
-  if (!lookupsOpen()) {
+  // Admin test page (charlieAdmin.html) bypasses the hours window entirely.
+  const ADMIN = window.__ADMIN__ || "";
+
+  if (!ADMIN && !lookupsOpen()) {
     if (input) { input.disabled = true; input.placeholder = "Available 12–7 PM ET"; }
     if (btn) btn.style.display = "none";   // hide the button outside the window
     if (note) note.innerHTML = "🕛 Submission lookups are only available from <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong>. Please check back during those hours.";
     return;
   }
-  // Open: show + enable the form.
+  // Open (or admin): show + enable the form.
   if (input) input.disabled = false;
-  if (btn) btn.style.display = "";        // reveal the button during the window
-  if (note) note.innerHTML = "🟢 Lookups are open now — available <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong> daily.";
+  if (btn) btn.style.display = "";
+  if (note) note.innerHTML = ADMIN
+    ? "🔧 Admin test mode — no time window, no 5-day lock."
+    : "🟢 Lookups are open now — available <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong> daily.";
 
   if (!sub) return; // nothing to look up yet
 
@@ -227,7 +232,7 @@ function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
 
   let data;
   try {
-    const resp = await fetch("/api/track?sub=" + encodeURIComponent(sub));
+    const resp = await fetch("/api/track?sub=" + encodeURIComponent(sub) + (ADMIN ? "&admin=" + encodeURIComponent(ADMIN) : ""));
     data = await resp.json();
   } catch (e) {
     result.innerHTML = '<div class="error-msg">Network error: ' + esc(String(e)) + '</div>';

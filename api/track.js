@@ -93,18 +93,23 @@ module.exports = async function handler(req, res) {
   if (!/^[0-9]+$/.test(sub)) {
     return res.status(400).json({ ok: false, error: "Please enter a valid numeric submission number." });
   }
-  if (!lookupsOpen()) {
+
+  // Admin test bypass (charlieAdmin.html): no hours window, no counting, no
+  // 5-day lock/cache — a plain pass-through to PSA for testing.
+  const isAdmin = (req.query && req.query.admin === "charlie");
+
+  if (!isAdmin && !lookupsOpen()) {
     return res.status(200).json({ ok: false, error: "Submission lookups are only available from 12:00 PM to 7:00 PM ET. Please check back during those hours." });
   }
   // Record that this submission was sent (counts every lookup, even if blocked
   // or PSA is rate-limited) so we can see which submissions are being hit.
-  await logSubmission(sub);
+  if (!isAdmin) await logSubmission(sub);
 
   // Once every 5 days per submission. If it was checked in the last 5 days,
   // return the SAVED status (their latest update) with an "already checked" flag
-  // and how many days remain — no new PSA call.
+  // and how many days remain — no new PSA call. (Admin bypasses this.)
   const cacheKey = "palmetto:cache:" + sub;
-  if (configured()) {
+  if (!isAdmin && configured()) {
     try {
       const saved = await cmd(["GET", cacheKey]);
       if (saved) {
@@ -172,7 +177,8 @@ module.exports = async function handler(req, res) {
 
   // Save the result for 5 days — repeats within that window get this saved
   // status instead of a new PSA call (stored only after a real success).
-  if (configured()) {
+  // Admin test lookups do NOT write the cache, so they never lock the real page.
+  if (!isAdmin && configured()) {
     try { await cmd(["SET", cacheKey, JSON.stringify(result), "EX", 5 * 24 * 3600]); } catch (e) {}
   }
 
