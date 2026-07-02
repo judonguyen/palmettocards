@@ -209,7 +209,6 @@ function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
     if (input) { input.disabled = true; input.placeholder = "Available 12–7 PM ET"; }
     if (btn) btn.disabled = true;
     if (note) note.innerHTML = "🕛 Submission lookups are only available from <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong>. Please check back during those hours.";
-    if (result && sub) result.innerHTML = '<div class="muted-note" style="text-align:center;padding:20px">🕛 Submission lookups are only available from 12:00 PM to 7:00 PM ET. Please check back during those hours.</div>';
     return;
   }
   // Open: enable the form.
