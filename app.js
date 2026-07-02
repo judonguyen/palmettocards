@@ -176,21 +176,35 @@ function wireShareButton(data) {
   });
 }
 
-// Temporarily paused: set to false to turn lookups back on.
-const LOOKUPS_PAUSED = true;
+// Lookups are only open 12:00 PM–7:00 PM Eastern (handles EST/EDT automatically).
+function etHour() {
+  try {
+    return parseInt(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hour12: false }).format(new Date()), 10) % 24;
+  } catch (e) { return -1; }
+}
+function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
 
 (async function () {
   const params = new URLSearchParams(window.location.search);
   const sub = params.get("sub");
   const input = document.getElementById("subInput");
   const result = document.getElementById("result");
+  const btn = document.getElementById("lookupBtn");
+  const note = document.getElementById("availNote");
 
   if (sub && input) input.value = sub;
 
-  if (LOOKUPS_PAUSED) {
-    if (result) result.innerHTML = '<div class="muted-note" style="text-align:center;padding:20px">🔒 Submission lookups are temporarily paused. Please check back later.</div>';
+  if (!lookupsOpen()) {
+    if (input) { input.disabled = true; input.placeholder = "Available 12–7 PM ET"; }
+    if (btn) btn.disabled = true;
+    if (note) note.innerHTML = "🕛 Submission lookups are only available from <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong>. Please check back during those hours.";
+    if (result && sub) result.innerHTML = '<div class="muted-note" style="text-align:center;padding:20px">🕛 Submission lookups are only available from 12:00 PM to 7:00 PM ET. Please check back during those hours.</div>';
     return;
   }
+  // Open: enable the form.
+  if (input) input.disabled = false;
+  if (btn) btn.disabled = false;
+  if (note) note.innerHTML = "🟢 Lookups are open now — available <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong> daily.";
 
   if (!sub) return; // nothing to look up yet
 

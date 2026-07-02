@@ -71,11 +71,23 @@ function centralPeriod() {
   return y + "-" + ("0" + (m + 1)).slice(-2) + "-" + ("0" + d).slice(-2);
 }
 
+// Lookups are only open 12:00 PM–7:00 PM Eastern (EST/EDT-aware). Server-side
+// backstop so no PSA call happens off-hours even via a direct request.
+function lookupsOpen() {
+  try {
+    const h = parseInt(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hour12: false }).format(new Date()), 10) % 24;
+    return h >= 12 && h < 19;
+  } catch (e) { return true; }  // if the timezone lookup fails, don't lock out
+}
+
 module.exports = async function handler(req, res) {
   const sub = (req.query && req.query.sub) ? String(req.query.sub) : "";
 
   if (!/^[0-9]+$/.test(sub)) {
     return res.status(400).json({ ok: false, error: "Please enter a valid numeric submission number." });
+  }
+  if (!lookupsOpen()) {
+    return res.status(200).json({ ok: false, error: "Submission lookups are only available from 12:00 PM to 7:00 PM ET. Please check back during those hours." });
   }
   // Record that this submission was sent (counts every lookup, even if blocked
   // or PSA is rate-limited) so we can see which submissions are being hit.
