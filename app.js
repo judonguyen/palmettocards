@@ -207,13 +207,13 @@ function lookupsOpen() { const h = etHour(); return h >= 12 && h < 19; }
 
   if (!lookupsOpen()) {
     if (input) { input.disabled = true; input.placeholder = "Available 12–7 PM ET"; }
-    if (btn) btn.disabled = true;
+    if (btn) btn.style.display = "none";   // hide the button outside the window
     if (note) note.innerHTML = "🕛 Submission lookups are only available from <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong>. Please check back during those hours.";
     return;
   }
-  // Open: enable the form.
+  // Open: show + enable the form.
   if (input) input.disabled = false;
-  if (btn) btn.disabled = false;
+  if (btn) btn.style.display = "";        // reveal the button during the window
   if (note) note.innerHTML = "🟢 Lookups are open now — available <strong>12:00&nbsp;PM to 7:00&nbsp;PM ET</strong> daily.";
 
   if (!sub) return; // nothing to look up yet
